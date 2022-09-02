@@ -134,6 +134,27 @@ app.post('/messages', async (req, res) => {
     res.sendStatus(500);
   }
 
+});
+
+app.get('/messages', async (req, res) => {
+
+  const { limit } = req.query
+
+  try {
+    const messages = await db.collection('messages').find().toArray();
+
+    if(limit){
+      let arrayMessages = messages.slice(-limit);
+      res.send(arrayMessages);
+      return;
+    }else{
+      res.send(messages)
+    }
+
+  } catch (error) {
+    console.log(error);
+    res.sendStatus(500);
+  }
 })
 
 app.post('/status', (req, res) => {
