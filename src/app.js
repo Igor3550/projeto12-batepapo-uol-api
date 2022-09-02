@@ -92,6 +92,48 @@ app.get('/participants', async (req, res) => {
     console.log(error);
     res.sendStatus(500);
   }
+});
+
+app.post('/messages', async (req, res) => {
+  const { to, text, type } = req.body
+  const { user } = req.headers
+
+  let timeNow = `${dayjs().hour()}:${dayjs().minute()}:${dayjs().second()}`;
+
+  const message = {
+    from: user,
+    to,
+    text,
+    type,
+    time: timeNow
+  }
+
+  try {
+
+    const existentParticipant = await db.collection('participants').find({name:user}).toArray()
+
+    if(existentParticipant.length === 0){
+      res.sendStatus(422)
+      return;
+    }
+
+    const validation = messagesSchema.validate(message);
+
+    if(validation.error){
+      console.log(validation.error.details)
+      res.sendStatus(422)
+      return;
+    }    
+
+    await db.collection('messages').insertOne(message)
+
+    res.sendStatus(201);
+    
+  } catch (error) {
+    console.log(error);
+    res.sendStatus(500);
+  }
+
 })
 
 app.post('/status', (req, res) => {
