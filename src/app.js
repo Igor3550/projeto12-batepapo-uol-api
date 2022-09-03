@@ -140,9 +140,9 @@ app.post('/messages', async (req, res) => {
 
   try {
 
-    const existentParticipant = await db.collection('participants').find({name:user}).toArray()
+    const existentParticipant = await db.collection('participants').findOne({name:user})
 
-    if(existentParticipant.length === 0){
+    if(!existentParticipant){
       res.sendStatus(422)
       return;
     }
@@ -202,6 +202,65 @@ app.post('/status', async (req, res) => {
     res.sendStatus(404)
   }
 });
+
+app.put('/messages/:messageId', async (req, res) => {
+  let timeNow = `${dayjs().hour()}:${dayjs().minute()}:${dayjs().second()}`;
+
+  const data = { 
+    to: stripHtml(req.body.to).result, 
+    text: stripHtml(req.body.text).result, 
+    type: stripHtml(req.body.type).result 
+  }
+
+  const { user } = req.headers
+  const { messageId } = req.params
+
+  const newMessage = {
+    from: user.trim(),
+    to: data.to.trim(),
+    text: data.text.trim(),
+    type: data.type.trim(),
+    time: timeNow
+  }
+
+  try {
+
+    const existentParticipant = await db.collection('participants').findOne({name:user})
+
+    if(!existentParticipant){
+      res.sendStatus(422)
+      return;
+    }
+
+    const validation = messagesSchema.validate(newMessage);
+
+    if(validation.error){
+      console.log(validation.error.details)
+      res.sendStatus(422)
+      return;
+    }
+
+    const message = await db.collection('messages').findOne({_id: ObjectId(messageId)})
+
+    if(!message) {
+      res.sendStatus(404)
+      return;
+    }
+
+    if(message.from !== user){
+      res.sendStatus(401);
+      return;
+    }
+
+    await db.collection('messages').updateOne({_id:ObjectId(messageId)}, {$set: newMessage});
+    res.sendStatus(200);
+
+  } catch (error) {
+    console.log(error);
+    res.sendStatus(500);
+  }
+
+})
 
 app.delete('/messages/:messageId', async (req, res) => {
   const {user} = req.headers;
