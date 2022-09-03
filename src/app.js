@@ -1,4 +1,5 @@
 import { MongoClient, ObjectId } from 'mongodb'
+import { stripHtml } from "string-strip-html";
 import express from 'express'
 import dotenv from 'dotenv'
 import dayjs from 'dayjs'
@@ -40,7 +41,6 @@ const messagesSchema = joi.object({
 setInterval(verifyParticipantsStatus, 15000)
 
 async function verifyParticipantsStatus () {
-  console.log('verifing...');
   try {
     const participants = await db.collection('participants').find().toArray()
     participants.forEach(async (participant)=> {
@@ -57,7 +57,6 @@ async function verifyParticipantsStatus () {
           time: timeNow
         })
       }
-      console.log(status);
     });
   } catch (error) {
     console.log(error)
@@ -66,8 +65,9 @@ async function verifyParticipantsStatus () {
 
 app.post('/participants', async (req, res) => {
 
+  const participantName = stripHtml(req.body.name).result
   const participant = {
-    name: req.body.name
+    name: participantName.trim()
   }
 
   const validation = participantSchema.validate(participant)
@@ -81,7 +81,6 @@ app.post('/participants', async (req, res) => {
   try {
 
     const searchedParticipant = await db.collection('participants').find(participant).toArray();
-    console.log(searchedParticipant);
 
     if(searchedParticipant.length > 0){
       res.sendStatus(409);
@@ -122,16 +121,20 @@ app.get('/participants', async (req, res) => {
 });
 
 app.post('/messages', async (req, res) => {
-  const { to, text, type } = req.body
+  const data = { 
+    to: stripHtml(req.body.to).result, 
+    text: stripHtml(req.body.text).result, 
+    type: stripHtml(req.body.type).result 
+  }
   const { user } = req.headers
 
   let timeNow = `${dayjs().hour()}:${dayjs().minute()}:${dayjs().second()}`;
 
   const message = {
-    from: user,
-    to,
-    text,
-    type,
+    from: user.trim(),
+    to: data.to.trim(),
+    text: data.text.trim(),
+    type: data.type.trim(),
     time: timeNow
   }
 
