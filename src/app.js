@@ -201,6 +201,31 @@ app.post('/status', async (req, res) => {
     console.log(error)
     res.sendStatus(404)
   }
-})
+});
+
+app.delete('/messages/:messageId', async (req, res) => {
+  const {user} = req.headers;
+  const {messageId} = req.params;
+
+  try {
+    const message = await db.collection('messages').findOne({_id: ObjectId(messageId)})
+    if(!message){
+      res.sendStatus(404)
+      return;
+    }
+    if(message.from !== user){
+      res.sendStatus(401);
+      return;
+    }
+
+    await db.collection('messages').deleteOne({_id: ObjectId(messageId)})
+    res.sendStatus(200);
+
+  } catch (error) {
+    console.log(error);
+    res.sendStatus(500)
+  }
+
+});
 
 app.listen(5000, () => console.log("Listen on port 5000..."))
