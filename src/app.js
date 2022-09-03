@@ -121,20 +121,16 @@ app.get('/participants', async (req, res) => {
 });
 
 app.post('/messages', async (req, res) => {
-  const data = { 
-    to: stripHtml(req.body.to).result, 
-    text: stripHtml(req.body.text).result, 
-    type: stripHtml(req.body.type).result 
-  }
+  const {to, text, type} = req.body
   const { user } = req.headers
 
   let timeNow = `${dayjs().hour()}:${dayjs().minute()}:${dayjs().second()}`;
 
   const message = {
-    from: user.trim(),
-    to: data.to.trim(),
-    text: data.text.trim(),
-    type: data.type.trim(),
+    from: user,
+    to,
+    text,
+    type,
     time: timeNow
   }
 
@@ -153,9 +149,17 @@ app.post('/messages', async (req, res) => {
       console.log(validation.error.details)
       res.sendStatus(422)
       return;
-    }    
+    }
 
-    await db.collection('messages').insertOne(message)
+    let sendMessage = {
+      from: stripHtml(message.from).result.trim(),
+      to: stripHtml(message.to).result.trim(),
+      text: stripHtml(message.text).result.trim(),
+      type: stripHtml(message.type).result.trim(),
+      time: stripHtml(message.time).result.trim()
+    }
+
+    await db.collection('messages').insertOne(sendMessage)
 
     res.sendStatus(201);
     
@@ -206,20 +210,16 @@ app.post('/status', async (req, res) => {
 app.put('/messages/:messageId', async (req, res) => {
   let timeNow = `${dayjs().hour()}:${dayjs().minute()}:${dayjs().second()}`;
 
-  const data = { 
-    to: stripHtml(req.body.to).result, 
-    text: stripHtml(req.body.text).result, 
-    type: stripHtml(req.body.type).result 
-  }
+  const {to, text, type} = req.body
 
   const { user } = req.headers
   const { messageId } = req.params
 
-  const newMessage = {
-    from: user.trim(),
-    to: data.to.trim(),
-    text: data.text.trim(),
-    type: data.type.trim(),
+  let newMessage = {
+    from: user,
+    to,
+    text,
+    type,
     time: timeNow
   }
 
@@ -250,6 +250,14 @@ app.put('/messages/:messageId', async (req, res) => {
     if(message.from !== user){
       res.sendStatus(401);
       return;
+    }
+
+    newMessage = {
+      from: stripHtml(newMessage.from).result.trim(),
+      to: stripHtml(newMessage.to).result.trim(),
+      text: stripHtml(newMessage.text).result.trim(),
+      type: stripHtml(newMessage.type).result.trim(),
+      time: stripHtml(newMessage.time).result.trim()
     }
 
     await db.collection('messages').updateOne({_id:ObjectId(messageId)}, {$set: newMessage});
