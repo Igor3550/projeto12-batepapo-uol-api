@@ -37,6 +37,33 @@ const messagesSchema = joi.object({
   time: joi.string().required()
 })
 
+setInterval(verifyParticipantsStatus, 15000)
+
+async function verifyParticipantsStatus () {
+  console.log('verifing...');
+  try {
+    const participants = await db.collection('participants').find().toArray()
+    participants.forEach(async (participant)=> {
+      let nowStats = Date.now()
+      let status = nowStats - participant.lastStatus
+      if(status > 10000){
+        let timeNow = `${dayjs().hour()}:${dayjs().minute()}:${dayjs().second()}`;
+        await db.collection('participants').deleteOne({_id:ObjectId(participant._id)});
+        await db.collection('messages').insertOne({
+          from: participant.name, 
+          to: 'Todos', 
+          text: 'sai da sala...', 
+          type: 'status', 
+          time: timeNow
+        })
+      }
+      console.log(status);
+    });
+  } catch (error) {
+    console.log(error)
+  }
+}
+
 app.post('/participants', async (req, res) => {
 
   const participant = {
@@ -171,6 +198,6 @@ app.post('/status', async (req, res) => {
     console.log(error)
     res.sendStatus(404)
   }
-  res.send('status');
 })
+
 app.listen(5000, () => console.log("Listen on port 5000..."))
