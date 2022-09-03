@@ -1,4 +1,4 @@
-import { MongoClient } from 'mongodb'
+import { MongoClient, ObjectId } from 'mongodb'
 import express from 'express'
 import dotenv from 'dotenv'
 import dayjs from 'dayjs'
@@ -155,9 +155,22 @@ app.get('/messages', async (req, res) => {
     console.log(error);
     res.sendStatus(500);
   }
-})
+});
 
-app.post('/status', (req, res) => {
-  res.send('status')
+app.post('/status', async (req, res) => {
+  const {user} = req.headers
+  try{
+    const participant = await db.collection('participants').findOne({name: user});
+    if(!participant){
+      res.sendStatus(404)
+      return;
+    }
+    await db.collection('participants').updateOne({_id:ObjectId(participant._id)}, {$set: {lastStatus: Date.now()}})
+    res.sendStatus(200)
+  }catch(error){
+    console.log(error)
+    res.sendStatus(404)
+  }
+  res.send('status');
 })
 app.listen(5000, () => console.log("Listen on port 5000..."))
